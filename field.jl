@@ -1,20 +1,38 @@
-function printField(field::AbstractMatrix{Char})
-    height, width = size(field)
-    for h in 1:height
-        for j in 1:width
-            print("+---")
-        end
-        print("+\n")
-        for j in 1:width
-            print("| $(field[h, j]) ")
+board = Array{Char, 2}(undef, 15, 80)
+for i in 1:length(board)
+    board[i] = 'x' 
+end
+
+for row in eachrow(board)
+    map(x->print(string(x)), row)
+    print("\n")
+end
+
+function printField(offset::Integer, field::AbstractMatrix{Char})
+    printWithOffset(string::String) = begin
+        print(repeat(" ", offset), string)
+    end
+
+    printHorizental() = begin
+        printWithOffset(repeat("+---", width) * "+\n")
+    end
+
+    printValues(row::AbstractArray) = begin
+        printWithOffset("")
+        for value in row
+            print("| $value ")
         end
         print("|\n")
     end
-    for j in 1:width
-        print("+---")
+
+    height, width = size(field)
+
+    for row in eachrow(field)
+        printHorizental()
+        printValues(row)
     end
-    print("+\n")
+    printHorizental()
 end
 
-field = ['1' '2'; '3' '4'; '5' '6' ]
-printField(field)
+field = Array{Char, 2}(undef, 9, 9)
+printField(10, field)
