@@ -1,10 +1,3 @@
-memory = Array{Char}(undef, 16)
-inbox = Array{Char}()
-programCounter = 1
-program = Array{CommandSet}()
-outbox = Array{Char}()
-
-register = ' '
 
 @enum Command begin
     Inbox
@@ -36,7 +29,7 @@ function isAddress(value)
 end
 
 function isValue(value)
-    return value isa Char && ' ' !== value
+    return ' ' !== value
 end
 
 function getAddress(command::CommandSet)::Integer
@@ -143,7 +136,11 @@ function execute(command::CommandSet)
         error(command, "$(command.command) is not supported.")
     end
 end
-
             
-            
+memory = Array{Char}(undef, 16)
+inbox = Array{Char}(undef, 10)
+programCounter = 1
+program = Array{CommandSet}(undef, 60)
+outbox = Array{Char}(undef, 10)
 
+register = ' '
