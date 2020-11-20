@@ -15,7 +15,7 @@ end
 
 struct CommandSet
     command::Command
-    value::Union{Char, Integer}
+    value::Union{Char, Int64}
     isPointer::Bool
 end
 
@@ -25,7 +25,7 @@ function error(command::CommandSet, message::String)
 end
 
 function isAddress(value)
-    return value isa Integer && value[1] <= length(memory)
+    return (value isa Int64) && (0 < value <= length(memory))
 end
 
 function isValue(value)
@@ -38,9 +38,10 @@ function getAddress(command::CommandSet)::Integer
     end
 
     if command.isPointer
-        address = tryparse(Int, command.value)
-        if nothing === address || address > length(memory)
-            error(command, "pointed value $(command.value) is no address.")
+        # we have to convert here, or compile will think this is a Char
+        address = convert(Int64, memory[command.value])
+        if !isAddress(address)
+            error(command, "pointed value $address is no address.")
         end
     else
         address = command.value
