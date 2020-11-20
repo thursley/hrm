@@ -73,10 +73,10 @@ function getMemoryValue(address)::Union{Nothing, Char}
 end
 
 function execute(command::CommandSet)
-    if Inbox == command.command
+    if Inbox === command.command
         register = pop!(Inbox)
 
-    elseif Outbox == command.command
+    elseif Outbox === command.command
         if ' ' === register
             error(command, "no value.")
         end
