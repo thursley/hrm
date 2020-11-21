@@ -212,7 +212,7 @@ end
 program = Program(undef, 60)
 programCounter = 0
 
-function init(machine::Machine)
+function init!(machine::Machine)
     machine.programCounter = 1
     for i in 1:length(machine.ram)
         machine.ram[i] = MemoryItem(' ')
@@ -221,7 +221,7 @@ function init(machine::Machine)
     machine.outbox = Array{Union{Char, Integer}}(undef, 0)
 end
 
-function singleStep(machine::Machine, program::Program)
+function singleStep!(machine::Machine, program::Program)
     execute!(program[machine.programCounter], machine)
     machine.programCounter += 1
 end
@@ -232,9 +232,9 @@ function isFinished(machine::Machine, program::Program)
              0 === length(machine.inbox))
 end
 
-function runProgram(machine::Machine, program::Program)
+function runProgram!(machine::Machine, program::Program)
     while !isFinished(machine, program)
         programCounter = machine.programCounter
-        singleStep(machine, program)
+        singleStep!(machine, program)
     end
 end

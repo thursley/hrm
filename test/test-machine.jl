@@ -152,7 +152,7 @@ programMaxOfTwo = ([
 )
 
 @testset "test_runProgram" begin
-    init(machine)
+    init!(machine)
     machine.inbox = Array{Union{Char, Integer}}(undef, 0)
 
     push!(machine.inbox, 'c')
@@ -165,12 +165,12 @@ programMaxOfTwo = ([
         CommandSet(Jump, 1, false)
     ]
 
-    runProgram(machine, program)
+    runProgram!(machine, program)
 
     @test machine.outbox == ['a', 'b', 'c']
-    init(machine)
+    init!(machine)
     machine.inbox = reverse(programMaxOfTwo[2])
-    runProgram(machine, programMaxOfTwo[1])
+    runProgram!(machine, programMaxOfTwo[1])
     @test machine.outbox == programMaxOfTwo[3]
 end
 
