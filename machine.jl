@@ -147,10 +147,29 @@ function execute!(command::CommandSet, machine::Machine)
     end
 end
             
-memory = Array{Char}(undef, 16)
-inbox = Array{Char}(undef, 10)
-programCounter = 1
 program = Array{CommandSet}(undef, 60)
-outbox = Array{Char}(undef, 10)
 
-register = ' '
+function init(machine::Machine)
+    machine.programCounter = 1
+    for i in range 1:length(machine.ram)
+        machine.ram[i] = ' '
+    end
+    machine.register = ' ' 
+    machine.outbox = Array{Union{Char, Integer}}()
+end
+    
+
+function runProgram(machine::Machine, program::Array{CommandSet})
+
+    nextCommand = program[machine.programCounter]
+
+    programFinished() = begin
+        return machine.programCounter > length(program) ||
+               (Inbox === nextCommand.command && 0 === length(machine.inbox))
+    end
+
+    while !programFinished()
+        execute!(program[machine.programCounter], machine)
+        machine.programCounter += 1
+    end
+end
