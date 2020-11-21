@@ -1,3 +1,26 @@
+struct MemoryItem
+    value::Integer
+    isCharacter::Bool
+end
+
+MemoryItem(value::Integer) = MemoryItem(value, false)
+MemoryItem(value::Char) = MemoryItem(convert(Int64, value), true)
+
+Base.:(==)(x::Char, y::MemoryItem) = begin
+    return y.isCharacter && convert(Char, y.value) === x
+end
+
+Base.:(==)(y::MemoryItem, x::Char) = begin
+    return x == y
+end
+
+Base.:(==)(x::Integer, y::MemoryItem) = begin
+    return !y.isCharacter && y.value == x
+end
+
+Base.:(==)(y::MemoryItem, x::Integer) = begin
+    return x == y
+end
 
 @enum Command begin
     Inbox
@@ -20,8 +43,8 @@ struct CommandSet
 end
 
 mutable struct Machine
-    ram::Array{Union{Char, Integer}}
-    register::Union{Char, Integer}
+    ram::Array{MemoryItem}
+    register::MemoryItem
     inbox::Array{Union{Char, Integer}}
     outbox::Array{Union{Char, Integer}}
     programCounter::Integer
@@ -77,7 +100,7 @@ end
 
 function execute!(command::CommandSet, machine::Machine)
     if Inbox === command.command
-        machine.register = pop!(machine.inbox)
+        machine.register = MemoryItem(pop!(machine.inbox))
 
     elseif Outbox === command.command
         if ' ' === machine.register
@@ -136,7 +159,7 @@ function execute!(command::CommandSet, machine::Machine)
             machine.programCounter = address - 1
         end
         
-    elseif JumpNegative === command.command   
+    elseif JumpZero === command.command   
         address = getNewProgramCounter(command)
         if ' ' === machine.register
             error(command, "no value")
