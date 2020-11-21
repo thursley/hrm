@@ -19,12 +19,20 @@ struct CommandSet
     isPointer::Bool
 end
 
+mutable struct Machine
+    ram::Array{Union{Char, Integer}}
+    register::Union{Char, Integer}
+    inbox::Array{Union{Char, Integer}}
+    outbox::Array{Union{Char, Integer}}
+    programCounter::Integer
+end
+
 function error(command::CommandSet, message::String)
     throw(ErrorException(
         "($programCounter) $(command.command) failed. " * message))
 end
 
-function isAddress(value)
+function isAddress(value, memory::Array{Union{Char, Integer}})
     return (value isa Int64) && (0 < value <= length(memory))
 end
 
@@ -32,15 +40,15 @@ function isValue(value)
     return ' ' !== value
 end
 
-function getAddress(command::CommandSet)::Integer
-    if !isAddress(command.address)
+function getAddress(command::CommandSet, memory::Array{Union{Char, Integer}})::Integer
+    if !isAddress(command.address, memory)
         error(command, "$(command.address) is no address")
     end
 
     if command.isPointer
         # we have to convert here, or compile will think this is a Char
         address = convert(Int64, memory[command.address])
-        if !isAddress(address)
+        if !isAddress(address, memory)
             error(command, "pointed value $address is no address.")
         end
     else
@@ -59,7 +67,7 @@ function getNewProgramCounter(command::CommandSet)::Integer
     return command.address
 end
 
-function getMemoryValue(address)::Union{Nothing, Char}
+function getMemoryValue(address, memory::Array{Union{Char, Integer}})::Union{Nothing, Char}
     if ' ' === memory[address] 
         return nothing
     else
@@ -67,52 +75,52 @@ function getMemoryValue(address)::Union{Nothing, Char}
     end
 end
 
-function execute(command::CommandSet)
+function execute!(command::CommandSet, machine::Machine)
     if Inbox === command.command
-        register = pop!(Inbox)
+        machine.register = pop!(machine.inbox)
 
     elseif Outbox === command.command
-        if ' ' === register
+        if ' ' === machine.register
             error(command, "no value.")
         end
-        push!(outbox, register)
-        register = ' '
+        push!(machine.outbox, machine.register)
+        machine.register = ' '
 
     elseif CopyFrom === command.command
-        address = getAddress(command)
+        address = getAddress(command, machine.ram)
 
-        if ' ' === memory[address]
+        if ' ' === machine.ram[address]
             error(command, "no value at $(command.address).")
         end
-        register = memory[command.address]
+        machine.register = machine.ram[address]
 
     elseif CopyTo == command.command
-        if ' ' === register
+        if ' ' === machine.register
             error(command, "no value.")
         end
 
-        address = getAddress(command)
-        memory[address] = register
+        address = getAddress(command, machine.ram)
+        machine.ram[address] = machine.register
 
     elseif command.command in (Add, Sub)
-        address = getAddress(command)
-        value = getMemoryValue(address)
+        address = getAddress(command, machine.ram)
+        value = getMemoryValue(address, machine.ram)
         if nothing === value
             error(command, "no value at $address")
-        elseif ' ' === register
+        elseif ' ' === machine.register
             error(command, "no value")
         end
 
-        register += Add === command.command ? value : -value
+        machine.register += Add === command.command ? value : -value
 
     elseif command.command in (Increment, Decrement)
-        address = getAddress(command)
-        value = getMemoryValue(address)
+        address = getAddress(command, machine.ram)
+        value = getMemoryValue(address, machine.ram)
         if nothing === value
             error(command, "no value at $address")
         end
-        memory[address] += Increment === command.command ? 1 : -1
-        register = memory[address]
+        machine.ram[address] += Increment === command.command ? 1 : -1
+        machine.register = machine.ram[address]
 
     elseif Jump === command.command
         address = getNewProgramCounter(command)
@@ -120,17 +128,17 @@ function execute(command::CommandSet)
 
     elseif JumpZero === command.command   
         address = getNewProgramCounter(command)
-        if ' ' === register
+        if ' ' === machine.register
             error(command, "no value")
-        elseif 0 === register
+        elseif 0 === machine.register
             programCounter = address - 1
         end
 
     elseif JumpZero === command.command   
         address = getNewProgramCounter(command)
-        if ' ' === register
+        if ' ' === machine.register
             error(command, "no value")
-        elseif register < 0
+        elseif machine.register < 0
             programCounter = address - 1
         end 
 
