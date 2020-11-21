@@ -137,3 +137,22 @@ end
     @test 47 === ram[point]
 
 end
+
+@testset "test_runProgram" begin
+    init(machine)
+    machine.inbox = Array{Union{Char, Integer}}(undef, 0)
+
+    push!(machine.inbox, 'c')
+    push!(machine.inbox, 'b')
+    push!(machine.inbox, 'a')
+
+    program = [
+        CommandSet(Inbox, 0, false)
+        CommandSet(Outbox, 0, false)
+        CommandSet(Jump, 1, false)
+    ]
+
+    runProgram(machine, program)
+
+    @test machine.outbox == ['a', 'b', 'c']
+end
