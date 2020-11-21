@@ -218,7 +218,11 @@ function init(machine::Machine)
     machine.register = MemoryItem(' ') 
     machine.outbox = Array{Union{Char, Integer}}(undef, 0)
 end
-    
+
+function singleStep(machine::Machine, program::Array{CommandSet})
+    execute!(program[machine.programCounter], machine)
+    machine.programCounter += 1
+end
 
 function runProgram(machine::Machine, program::Array{CommandSet})
 
@@ -231,8 +235,7 @@ function runProgram(machine::Machine, program::Array{CommandSet})
     end
     
     while !programFinished()
-        execute!(program[machine.programCounter], machine)
-        machine.programCounter += 1
+        singleStep(machine, program)
         programCounter = machine.programCounter
         nextCommand = program[machine.programCounter]
     end
