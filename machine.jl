@@ -15,7 +15,7 @@ end
 
 struct CommandSet
     command::Command
-    value::Union{Char, Int64}
+    address::Integer
     isPointer::Bool
 end
 
@@ -33,29 +33,30 @@ function isValue(value)
 end
 
 function getAddress(command::CommandSet)::Integer
-    if !isAddress(command.value)
-        error(command, "$(command.value) is no address")
+    if !isAddress(command.address)
+        error(command, "$(command.address) is no address")
     end
 
     if command.isPointer
         # we have to convert here, or compile will think this is a Char
-        address = convert(Int64, memory[command.value])
+        address = convert(Int64, memory[command.address])
         if !isAddress(address)
             error(command, "pointed value $address is no address.")
         end
     else
-        address = command.value
+        address = command.address
     end
 
     return address
 end
 
 function getNewProgramCounter(command::CommandSet)::Integer
-    if !(command.value isa Integer) || command.value > length(program)
-        error(command, "$(command.value) is no program counter address")
+    value = command.address
+    if !(value isa Integer) || value > length(program) || value < 1
+        error(command, "$(command.address) is no program counter address")
     end
     
-    return command.value
+    return command.address
 end
 
 function getMemoryValue(address)::Union{Nothing, Char}
@@ -81,9 +82,9 @@ function execute(command::CommandSet)
         address = getAddress(command)
 
         if ' ' === memory[address]
-            error(command, "no value at $(command.value).")
+            error(command, "no value at $(command.address).")
         end
-        register = memory[command.value]
+        register = memory[command.address]
 
     elseif CopyTo == command.command
         if ' ' === register
