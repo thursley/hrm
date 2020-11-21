@@ -2,6 +2,12 @@ using Test
 
 include("../machine.jl")
 
+ram = Array{Union{Char, Integer}}(undef, 16)
+inbox = Array{Union{Char, Integer}}(undef, 0)
+outbox = Array{Union{Char, Integer}}(undef, 0)
+
+machine = Machine(ram, ' ', inbox, outbox, 0)
+
 @testset "test_error" begin
     command = CommandSet(CopyFrom, 0, true)
     testMessage = "this is a test message"
@@ -15,13 +21,13 @@ include("../machine.jl")
 end
 
 @testset "test_isAddress" begin
-    @test false === isAddress("")
-    @test false === isAddress('a')
-    @test false === isAddress(1.0)
-    @test false === isAddress(0)
-    @test false === isAddress(length(memory) + 1)
-    for i in 1:length(memory)
-        @test true === isAddress(i)
+    @test false === isAddress("", machine.ram)
+    @test false === isAddress('a', machine.ram)
+    @test false === isAddress(1.0, machine.ram)
+    @test false === isAddress(0, machine.ram)
+    @test false === isAddress(length(machine.ram) + 1, machine.ram)
+    for i in 1:length(machine.ram)
+        @test true === isAddress(i, machine.ram)
     end
 end
 
@@ -34,14 +40,14 @@ end
 @testset "test_getAddress_success" begin
     index = 1::Int64
     pointer = 2::Int64
-    memory[index] = pointer
-    memory[pointer] = 3
+    machine.ram[index] = pointer
+    machine.ram[pointer] = 3
 
     directCommand = CommandSet(CopyFrom, index, false)
     pointedCommand = CommandSet(CopyFrom, index, true)
 
-    @test 1 === getAddress(directCommand)
-    @test 2 === getAddress(pointedCommand)
+    @test 1 === getAddress(directCommand, machine.ram)
+    @test 2 === getAddress(pointedCommand, machine.ram)
 end
 
 @testset "test_getNewProgramCounter" begin
@@ -58,4 +64,76 @@ end
         end
         @test thrown
     end
+end
+
+@testset "test_execute_outbox" begin
+    command = CommandSet(Outbox, 0, false)
+    machine.register = ' '
+    thrown = false
+    try
+        execute!(command, machine)
+    catch
+       thrown = true
+    end
+
+    @test thrown
+
+    value = 'a'
+    machine.register = value
+    execute!(command, machine)
+
+    @test last(machine.outbox) === value
+    @test ' ' === machine.register
+end
+
+@testset "test_execute_inbox" begin
+    command = CommandSet(Inbox, 0, false)
+    push!(machine.inbox, 'a')
+    push!(machine.inbox, 'b')
+    machine.register = ' '
+    execute!(command, machine)
+    
+    @test machine.register === 'b'
+    @test last(machine.inbox) === 'a'
+end
+
+@testset "test_execute_copyfrom" begin
+    index = 5
+    pointer = 3
+    secret = 47
+    direct = CommandSet(CopyFrom, index, false)
+    pointed = CommandSet(CopyFrom, index, true)
+    machine.ram[index] = pointer
+    machine.ram[pointer] = secret
+
+    execute!(direct, machine)
+    @test machine.register === pointer
+
+    execute!(pointed, machine)
+    @test machine.register === secret
+end
+
+@testset "test_execute_copyto" begin
+    index = 5
+    pointer = 3
+    point = 7
+
+    machine.ram[index] = 0
+    machine.ram[pointer] = point
+    machine.ram[point] = 0
+
+    machine.register = 'a'
+
+    direct = CommandSet(CopyTo, index, false)
+    pointed = CommandSet(CopyTo, pointer, true)
+
+    execute!(direct, machine)
+    @test 'a' === machine.register
+    @test 'a' === machine.ram[index]
+
+    machine.register = 47
+    execute!(pointed, machine)
+    @test 47 === machine.register
+    @test 47 === ram[point]
+
 end
