@@ -124,22 +124,25 @@ function execute!(command::CommandSet, machine::Machine)
 
     elseif Jump === command.command
         address = getNewProgramCounter(command)
-        programCounter = address - 1
-
+        # address will be incremented later.
+        machine.programCounter = address - 1
+        
     elseif JumpZero === command.command   
         address = getNewProgramCounter(command)
         if ' ' === machine.register
             error(command, "no value")
         elseif 0 === machine.register
-            programCounter = address - 1
+            # address will be incremented later.
+            machine.programCounter = address - 1
         end
-
+        
     elseif JumpZero === command.command   
         address = getNewProgramCounter(command)
         if ' ' === machine.register
             error(command, "no value")
         elseif machine.register < 0
-            programCounter = address - 1
+            # address will be incremented later.
+            machine.programCounter = address - 1
         end 
 
     else
@@ -148,28 +151,31 @@ function execute!(command::CommandSet, machine::Machine)
 end
             
 program = Array{CommandSet}(undef, 60)
+programCounter = 0
 
 function init(machine::Machine)
     machine.programCounter = 1
-    for i in range 1:length(machine.ram)
+    for i in 1:length(machine.ram)
         machine.ram[i] = ' '
     end
     machine.register = ' ' 
-    machine.outbox = Array{Union{Char, Integer}}()
+    machine.outbox = Array{Union{Char, Integer}}(undef, 0)
 end
     
 
 function runProgram(machine::Machine, program::Array{CommandSet})
 
     nextCommand = program[machine.programCounter]
-
-    programFinished() = begin
+    
+    programFinished()::Bool = begin
         return machine.programCounter > length(program) ||
-               (Inbox === nextCommand.command && 0 === length(machine.inbox))
+        (Inbox === nextCommand.command && 0 === length(machine.inbox))
     end
-
+    
     while !programFinished()
+        programCounter = machine.programCounter
         execute!(program[machine.programCounter], machine)
         machine.programCounter += 1
+        nextCommand = program[machine.programCounter]
     end
 end
