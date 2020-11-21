@@ -226,25 +226,15 @@ function singleStep(machine::Machine, program::Program)
     machine.programCounter += 1
 end
 
-function isFinished(machine::Machine, programm::Program)
+function isFinished(machine::Machine, program::Program)
     return machine.programCounter > length(program) ||
         (Inbox === program[machine.programCounter].command &&
              0 === length(machine.inbox))
 end
 
 function runProgram(machine::Machine, program::Program)
-
-    nextCommand = program[machine.programCounter]
-    programCounter = machine.programCounter
-    
-    programFinished()::Bool = begin
-        return machine.programCounter > length(program) ||
-        (Inbox === nextCommand.command && 0 === length(machine.inbox))
-    end
-    
-    while !programFinished()
-        singleStep(machine, program)
+    while !isFinished(machine, program)
         programCounter = machine.programCounter
-        nextCommand = program[machine.programCounter]
+        singleStep(machine, program)
     end
 end
