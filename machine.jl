@@ -104,7 +104,7 @@ function execute!(command::CommandSet, machine::Machine)
 
     elseif command.command in (Add, Sub)
         address = getAddress(command, machine.ram)
-        value = getMemoryValue(address, machine.ram)
+        value = convert(Int, getMemoryValue(address, machine.ram))
         if nothing === value
             error(command, "no value at $address")
         elseif ' ' === machine.register
@@ -136,7 +136,7 @@ function execute!(command::CommandSet, machine::Machine)
             machine.programCounter = address - 1
         end
         
-    elseif JumpZero === command.command   
+    elseif JumpNegative === command.command   
         address = getNewProgramCounter(command)
         if ' ' === machine.register
             error(command, "no value")
@@ -166,6 +166,7 @@ end
 function runProgram(machine::Machine, program::Array{CommandSet})
 
     nextCommand = program[machine.programCounter]
+    programCounter = machine.programCounter
     
     programFinished()::Bool = begin
         return machine.programCounter > length(program) ||
@@ -173,9 +174,9 @@ function runProgram(machine::Machine, program::Array{CommandSet})
     end
     
     while !programFinished()
-        programCounter = machine.programCounter
         execute!(program[machine.programCounter], machine)
         machine.programCounter += 1
+        programCounter = machine.programCounter
         nextCommand = program[machine.programCounter]
     end
 end
