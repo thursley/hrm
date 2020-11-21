@@ -71,6 +71,8 @@ struct CommandSet
     isPointer::Bool
 end
 
+Program = Array{CommandSet}
+
 mutable struct Machine
     ram::Array{MemoryItem}
     register::MemoryItem
@@ -207,7 +209,7 @@ function execute!(command::CommandSet, machine::Machine)
     end
 end
             
-program = Array{CommandSet}(undef, 60)
+program = Program(undef, 60)
 programCounter = 0
 
 function init(machine::Machine)
@@ -219,12 +221,18 @@ function init(machine::Machine)
     machine.outbox = Array{Union{Char, Integer}}(undef, 0)
 end
 
-function singleStep(machine::Machine, program::Array{CommandSet})
+function singleStep(machine::Machine, program::Program)
     execute!(program[machine.programCounter], machine)
     machine.programCounter += 1
 end
 
-function runProgram(machine::Machine, program::Array{CommandSet})
+function isFinished(machine::Machine, programm::Program)
+    return machine.programCounter > length(program) ||
+        (Inbox === program[machine.programCounter].command &&
+             0 === length(machine.inbox))
+end
+
+function runProgram(machine::Machine, program::Program)
 
     nextCommand = program[machine.programCounter]
     programCounter = machine.programCounter
