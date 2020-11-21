@@ -43,3 +43,19 @@ end
     @test 1 === getAddress(directCommand)
     @test 2 === getAddress(pointedCommand)
 end
+
+@testset "test_getNewProgramCounter" begin
+    for i in 1:length(program)
+        command = CommandSet(Jump, i, false)
+        @test i === getNewProgramCounter(command)
+    end 
+    for j in (0, length(program) + 1)
+        thrown = false
+        try
+            getNewProgramCounter(CommandSet(Jump, j, false))
+        catch
+            thrown = true
+        end
+        @test thrown
+    end
+end
