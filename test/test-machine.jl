@@ -2,13 +2,55 @@ using Test
 using Hrm.Engine: programCounter, Machine, MemoryItem, runProgram!, execute!, 
     singleStep!, init!, CommandSet, Inbox, Outbox, CopyFrom, CopyTo, Add, Sub, 
     Increment, Decrement, Jump, JumpNegative, JumpZero, error, isAddress, 
-    getAddress, isValue, Program, getNewProgramCounter
+    getAddress, isValue, Program, getNewProgramCounter, Command
+
+import Base.copy
+
+Base.:(==)(x::MemoryItem, y::MemoryItem) = begin
+    return y.isCharacter == x.isCharacter && y.value == x.value
+end
+
+function Base.:(==)(m1::Machine, m2::Machine)
+    return m1.ram == m2.ram &&
+           m1.register == m2.register &&
+           m1.inbox == m2.inbox &&
+           m1.outbox == m2.outbox &&
+           m1.programCounter == m2.programCounter
+end
+
+function copy(machine::Machine)::Machine 
+    return Machine(
+        copy(machine.ram),
+        machine.register,
+        copy(machine.inbox),
+        copy(machine.outbox),
+        machine.programCounter)
+end
+
+struct TestCase
+    machine::Machine
+    command::CommandSet
+    expectedOutcome::Machine
+end
+
+function testCommand(testCase::TestCase)::Bool
+    execute!(testCase.command, testCase.machine)
+    return testCase.expectedOutcome == testCase.machine
+end
+
 
 ram = Vector{MemoryItem}(undef, 16)
 inbox = Vector{Union{Char, Integer}}(undef, 0)
 outbox = Vector{Union{Char, Integer}}(undef, 0)
 
 machine = Machine(ram, MemoryItem(' '), inbox, outbox, 0)
+init!(machine)
+
+@testset "test_equality" begin
+    machine2 = copy(machine)
+    @test machine2 == machine
+    @test machine2 !== machine
+end
 
 @testset "test_error" begin
     cmd = CommandSet(CopyFrom, 0, true)
@@ -88,12 +130,12 @@ end
 @testset "test_execute_inbox" begin
     command = CommandSet(Inbox, 0, false)
     push!(machine.inbox, 'a')
+    expected = copy(machine)
     push!(machine.inbox, 'b')
     machine.register = MemoryItem(' ')
-    execute!(command, machine)
-    
-    @test machine.register == 'b'
-    @test last(machine.inbox) == 'a'
+    expected.register = MemoryItem('b')
+
+    @test testCommand(TestCase(machine, command, expected)) 
 end
 
 @testset "test_execute_copyfrom" begin
@@ -105,11 +147,12 @@ end
     machine.ram[index] = MemoryItem(pointer)
     machine.ram[pointer] = MemoryItem(secret)
 
-    execute!(direct, machine)
-    @test machine.register == pointer
-
-    execute!(pointed, machine)
-    @test machine.register == secret
+    expected = copy(machine)
+    expected.register = MemoryItem(pointer)
+    @test testCommand(TestCase(machine, direct, expected))
+    
+    expected.register = MemoryItem(secret)
+    @test testCommand(TestCase(machine, pointed, expected))
 end
 
 @testset "test_execute_copyto" begin
@@ -121,20 +164,18 @@ end
     machine.ram[pointer] = MemoryItem(point)
     machine.ram[point] = MemoryItem(0)
 
-    machine.register = MemoryItem('a')
-
     direct = CommandSet(CopyTo, index, false)
     pointed = CommandSet(CopyTo, pointer, true)
-
-    execute!(direct, machine)
-    @test 'a' == machine.register
-    @test 'a' == machine.ram[index]
-
+    
+    machine.register = MemoryItem('a')
+    expected = copy(machine)
+    expected.ram[index] = expected.register
+    @test testCommand(TestCase(machine, direct, expected))
+    
     machine.register = MemoryItem(47)
-    execute!(pointed, machine)
-    @test 47 == machine.register
-    @test 47 == ram[point]
-
+    expected = copy(machine)
+    expected.ram[point] = expected.register
+    @test testCommand(TestCase(machine, pointed, expected))
 end
 
 @testset "test_execute_add" begin
@@ -172,6 +213,66 @@ end
     execute!(command, machine)
     @test value + 1 == machine.ram[index]
     @test value + 1 == machine.register
+end
+
+@testset "test_execute_decrement" begin
+    value = 16
+    index = 12
+    machine.ram[index] = MemoryItem(value)
+    machine.register = MemoryItem('x')
+    command = CommandSet(Decrement, index, false)
+    execute!(command, machine)
+    @test value - 1 == machine.ram[index]
+    @test value - 1 == machine.register
+end
+
+@testset "test_execute_jump" begin
+    oldPc = 7
+    newPc = 18
+    machine.programCounter = 7
+    command = CommandSet(Jump, newPc, false)
+    execute!(command, machine)
+    @test newPc - 1 == machine.programCounter
+end
+
+@testset "test_execute_jumpZero" begin
+    oldPc = 7
+    newPc = 18
+    machine.programCounter = 7
+    command = CommandSet(JumpZero, newPc, false)
+    machine.register = MemoryItem(0)
+    execute!(command, machine)
+    @test newPc - 1 == machine.programCounter
+
+    machine.programCounter = oldPc
+    machine.register = MemoryItem(-2)
+    execute!(command, machine)
+    @test oldPc == machine.programCounter
+
+    machine.programCounter = oldPc
+    machine.register = MemoryItem(15)
+    execute!(command, machine)
+    @test oldPc == machine.programCounter
+end
+
+@testset "test_execute_jumpZero" begin
+    oldPc = 7
+    newPc = 18
+    machine.programCounter = 7
+    command = CommandSet(JumpNegative, newPc, false)
+    machine.register = MemoryItem(-2)
+    execute!(command, machine)
+    @test newPc - 1 == machine.programCounter
+
+    machine.programCounter = oldPc
+    machine.register = MemoryItem(0)
+    execute!(command, machine)
+    @test oldPc == machine.programCounter
+
+    machine.programCounter = oldPc
+    machine.register = MemoryItem(15)
+    execute!(command, machine)
+    @test oldPc == machine.programCounter
 end
 
 programMaxOfTwo = ([
