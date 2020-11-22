@@ -38,6 +38,10 @@ function testCommand(testCase::TestCase)::Bool
     return testCase.expectedOutcome == testCase.machine
 end
 
+function testCommand(testee::Machine, command::CommandSet, expected::Machine)
+    return testCommand(TestCase(testee, command, expected))
+end 
+
 
 ram = Vector{MemoryItem}(undef, 16)
 inbox = Vector{Union{Char, Integer}}(undef, 0)
@@ -186,9 +190,9 @@ end
     machine.register = MemoryItem(offset)
 
     command = CommandSet(Add, index, false)
-    execute!(command, machine)
-    @test value + offset == machine.register
-    @test value == machine.ram[index]
+    expected = copy(machine)
+    expected.register = MemoryItem(offset + value)
+    @test testCommand(machine, command, expected)
 end
 
 @testset "test_execute_sub" begin
@@ -199,9 +203,9 @@ end
     machine.register = MemoryItem(offset)
 
     command = CommandSet(Sub, index, false)
-    execute!(command, machine)
-    @test offset - value == machine.register
-    @test value == machine.ram[index]
+    expected = copy(machine)
+    expected.register = MemoryItem(offset - value)
+    @test testCommand(machine, command, expected)
 end
 
 @testset "test_execute_increment" begin
@@ -210,9 +214,10 @@ end
     machine.ram[index] = MemoryItem(value)
     machine.register = MemoryItem('x')
     command = CommandSet(Increment, index, false)
-    execute!(command, machine)
-    @test value + 1 == machine.ram[index]
-    @test value + 1 == machine.register
+    expected = copy(machine)
+    expected.register = MemoryItem(value + 1)
+    expected.ram[index] = expected.register
+    @test testCommand(machine, command, expected)
 end
 
 @testset "test_execute_decrement" begin
@@ -221,58 +226,50 @@ end
     machine.ram[index] = MemoryItem(value)
     machine.register = MemoryItem('x')
     command = CommandSet(Decrement, index, false)
-    execute!(command, machine)
-    @test value - 1 == machine.ram[index]
-    @test value - 1 == machine.register
+    expected = copy(machine)
+    expected.register = MemoryItem(value - 1)
+    expected.ram[index] = expected.register
+    @test testCommand(machine, command, expected)
+end
+
+function testJump(oldPc, command, jumpExpected)::Bool
+    machine.programCounter = oldPc
+    expected = copy(machine)
+    if jumpExpected
+        expected.programCounter = command.address - 1
+    end
+    return testCommand(machine, command, expected)
 end
 
 @testset "test_execute_jump" begin
-    oldPc = 7
-    newPc = 18
-    machine.programCounter = 7
-    command = CommandSet(Jump, newPc, false)
-    execute!(command, machine)
-    @test newPc - 1 == machine.programCounter
+    command = CommandSet(Jump, 18, false)
+    @test testJump(7, command, true)
 end
 
 @testset "test_execute_jumpZero" begin
-    oldPc = 7
-    newPc = 18
-    machine.programCounter = 7
-    command = CommandSet(JumpZero, newPc, false)
+    command = CommandSet(JumpZero, 58, false)
+
     machine.register = MemoryItem(0)
-    execute!(command, machine)
-    @test newPc - 1 == machine.programCounter
-
-    machine.programCounter = oldPc
+    @test testJump(5, command, true)
+   
     machine.register = MemoryItem(-2)
-    execute!(command, machine)
-    @test oldPc == machine.programCounter
-
-    machine.programCounter = oldPc
+    @test testJump(5, command, false)
+   
     machine.register = MemoryItem(15)
-    execute!(command, machine)
-    @test oldPc == machine.programCounter
+    @test testJump(5, command, false)
 end
 
-@testset "test_execute_jumpZero" begin
-    oldPc = 7
-    newPc = 18
-    machine.programCounter = 7
-    command = CommandSet(JumpNegative, newPc, false)
-    machine.register = MemoryItem(-2)
-    execute!(command, machine)
-    @test newPc - 1 == machine.programCounter
-
-    machine.programCounter = oldPc
+@testset "test_execute_jumpNegative" begin
+     command = CommandSet(JumpNegative, 58, false)
+    
     machine.register = MemoryItem(0)
-    execute!(command, machine)
-    @test oldPc == machine.programCounter
-
-    machine.programCounter = oldPc
+    @test testJump(5, command, false)
+   
+    machine.register = MemoryItem(-2)
+    @test testJump(5, command, true)
+   
     machine.register = MemoryItem(15)
-    execute!(command, machine)
-    @test oldPc == machine.programCounter
+    @test testJump(5, command, false)
 end
 
 programMaxOfTwo = ([
