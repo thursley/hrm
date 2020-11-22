@@ -1,23 +1,23 @@
 using Test
+using Hrm.Engine: programCounter,Machine, MemoryItem, runProgram!,execute!, singleStep!, init!,CommandSet,Inbox, Outbox,CopyFrom,CopyTo,Add,Sub,Jump,JumpNegative,JumpZero,error,isAddress,getAddress,isValue, Program,getNewProgramCounter
 
-include("../machine.jl")
-
-ram = Array{MemoryItem}(undef, 16)
-inbox = Array{Union{Char, Integer}}(undef, 0)
-outbox = Array{Union{Char, Integer}}(undef, 0)
+ram = Vector{MemoryItem}(undef, 16)
+inbox = Vector{Union{Char, Integer}}(undef, 0)
+outbox = Vector{Union{Char, Integer}}(undef, 0)
 
 machine = Machine(ram, MemoryItem(' '), inbox, outbox, 0)
 
 @testset "test_error" begin
-    command = CommandSet(CopyFrom, 0, true)
+    cmd = CommandSet(CopyFrom, 0, true)
     testMessage = "this is a test message"
     message = ""
     try
-        error(command, testMessage)
+        error(cmd, testMessage)
     catch exception
         message = exception.msg
     end
-    @test "($programCounter) $(command.command) failed. " * testMessage == message
+    @test ("ERROR: ($programCounter) $(cmd.command) failed. " * testMessage 
+            == message)
 end
 
 @testset "test_isAddress" begin
@@ -48,19 +48,18 @@ end
 end
 
 @testset "test_getNewProgramCounter" begin
-    for i in 1:length(program)
+    for i in 1:100
         command = CommandSet(Jump, i, false)
         @test i === getNewProgramCounter(command)
     end 
-    for j in (0, length(program) + 1)
-        thrown = false
-        try
-            getNewProgramCounter(CommandSet(Jump, j, false))
-        catch
-            thrown = true
-        end
-        @test thrown
+    thrown = false
+    try
+        getNewProgramCounter(CommandSet(Jump, 0, false))
+    catch
+        thrown = true
     end
+    @test thrown
+    
 end
 
 @testset "test_execute_outbox" begin

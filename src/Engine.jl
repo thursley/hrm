@@ -1,4 +1,4 @@
-module Machine
+module Engine
 
 struct MemoryItem
     value::Integer
@@ -73,26 +73,30 @@ struct CommandSet
     isPointer::Bool
 end
 
-Program = Array{CommandSet}
+Program = Vector{CommandSet}
 
 mutable struct Machine
-    ram::Array{MemoryItem}
+    ram::Vector{MemoryItem}
     register::MemoryItem
-    inbox::Array{Union{Char, Integer}}
-    outbox::Array{Union{Char, Integer}}
+    inbox::Vector{Union{Char, Integer}}
+    outbox::Vector{Union{Char, Integer}}
     programCounter::Integer
 end
 
 function error(command::CommandSet, message::String)
     throw(ErrorException(
-        "($programCounter) $(command.command) failed. " * message))
+        "ERROR: ($programCounter) $(command.command) failed. " * message))
 end
 
-function isAddress(value::Integer, memory::Array{MemoryItem})
+function error(message::String)
+    throw(ErrorException("ERROR: " * message))
+end
+
+function isAddress(value::Integer, memory::Vector{MemoryItem})
     return 0 < value <= length(memory)
 end
 
-function isAddress(value::MemoryItem, memory::Array{MemoryItem})
+function isAddress(value::MemoryItem, memory::Vector{MemoryItem})
     return !value.isCharacter && (0 < value.value <= length(memory))
 end
 
@@ -100,7 +104,7 @@ function isValue(value)
     return ' ' !== value
 end
 
-function getAddress(command::CommandSet, memory::Array{MemoryItem})::Integer
+function getAddress(command::CommandSet, memory::Vector{MemoryItem})::Integer
     if !isAddress(command.address, memory)
         error(command, "$(command.address) is no address")
     end
@@ -119,15 +123,14 @@ function getAddress(command::CommandSet, memory::Array{MemoryItem})::Integer
 end
 
 function getNewProgramCounter(command::CommandSet)::Integer
-    value = command.address
-    if !(value isa Integer) || value > length(program) || value < 1
+    if command.address < 1
         error(command, "$(command.address) is no program counter address")
     end
     
     return command.address
 end
 
-function getMemoryValue(address, memory::Array{MemoryItem})::MemoryItem
+function getMemoryValue(address, memory::Vector{MemoryItem})::MemoryItem
     if ' ' == memory[address] 
         return nothing
     else
@@ -220,15 +223,19 @@ function init!(machine::Machine)
         machine.ram[i] = MemoryItem(' ')
     end
     machine.register = MemoryItem(' ') 
-    machine.outbox = Array{Union{Char, Integer}}(undef, 0)
+    machine.outbox = Vector{Union{Char, Integer}}(undef, 0)
 end
 
 function singleStep!(machine::Machine, program::Program)
+    if machine.programCounter > length(program)
+        error("program counter value $(machine.programCounter) exceeds " *
+              "length of program $(length(program)).")
+    end
     execute!(program[machine.programCounter], machine)
     machine.programCounter += 1
 end
 
-function isFinished(machine::Machine, program::Program)
+function isFinished(machine::Machine, program::Program)::Bool
     return machine.programCounter > length(program) ||
         (Inbox === program[machine.programCounter].command &&
              0 === length(machine.inbox))
