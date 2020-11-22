@@ -16,6 +16,10 @@ function unwrap(item::MemoryItem)
     end
 end
 
+Base.:(==)(x::MemoryItem, y::MemoryItem) = begin
+    return y.isCharacter == x.isCharacter && y.value == x.value
+end
+
 Base.:(==)(x::Char, y::MemoryItem) = begin
     return y.isCharacter && convert(Char, y.value) === x
 end
