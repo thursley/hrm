@@ -39,6 +39,20 @@ Base.:(+)(x::MemoryItem, y::MemoryItem) = begin
     return MemoryItem(x.value + y.value, false)
 end
 
+Base.:(+)(x::MemoryItem, y::Integer) = begin
+    if x.isCharacter
+        throw(ErrorException("you can't add characters."))
+    end
+    return MemoryItem(x.value + y, false)
+end
+
+Base.:(-)(x::MemoryItem, y::Integer) = begin
+    if x.isCharacter
+        throw(ErrorException("you can't add characters."))
+    end
+    return MemoryItem(x.value - y, false)
+end
+
 Base.:(-)(x::MemoryItem, y::MemoryItem) = begin
     if x.isCharacter != y.isCharacter
         throw(ErrorException("items have to be of same type when subtracting"))
@@ -181,9 +195,9 @@ function execute!(command::CommandSet, machine::Machine)
         address = getAddress(command, machine.ram)
         value = getMemoryValue(address, machine.ram)
         if nothing === value
-            error(command, "no value at $address")
+            error(command, "no value at [$address]")
         end
-        machine.ram[address].value += Increment === command.command ? 1 : -1
+        machine.ram[address] += Increment === command.command ? 1 : -1
         machine.register = machine.ram[address]
 
     elseif Jump === command.command

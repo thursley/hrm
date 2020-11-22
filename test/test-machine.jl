@@ -1,8 +1,8 @@
 using Test
 using Hrm.Engine: programCounter, Machine, MemoryItem, runProgram!, execute!, 
     singleStep!, init!, CommandSet, Inbox, Outbox, CopyFrom, CopyTo, Add, Sub, 
-    Jump, JumpNegative, JumpZero, error, isAddress, getAddress, isValue, 
-    Program, getNewProgramCounter
+    Increment, Decrement, Jump, JumpNegative, JumpZero, error, isAddress, 
+    getAddress, isValue, Program, getNewProgramCounter
 
 ram = Vector{MemoryItem}(undef, 16)
 inbox = Vector{Union{Char, Integer}}(undef, 0)
@@ -135,6 +135,43 @@ end
     @test 47 == machine.register
     @test 47 == ram[point]
 
+end
+
+@testset "test_execute_add" begin
+    value = 7
+    offset = 1009
+    index = 1
+    machine.ram[index] = MemoryItem(value)
+    machine.register = MemoryItem(offset)
+
+    command = CommandSet(Add, index, false)
+    execute!(command, machine)
+    @test value + offset == machine.register
+    @test value == machine.ram[index]
+end
+
+@testset "test_execute_sub" begin
+    value = 7
+    offset = 1009
+    index = 1
+    machine.ram[index] = MemoryItem(value)
+    machine.register = MemoryItem(offset)
+
+    command = CommandSet(Sub, index, false)
+    execute!(command, machine)
+    @test offset - value == machine.register
+    @test value == machine.ram[index]
+end
+
+@testset "test_execute_increment" begin
+    value = 16
+    index = 12
+    machine.ram[index] = MemoryItem(value)
+    machine.register = MemoryItem('x')
+    command = CommandSet(Increment, index, false)
+    execute!(command, machine)
+    @test value + 1 == machine.ram[index]
+    @test value + 1 == machine.register
 end
 
 programMaxOfTwo = ([
