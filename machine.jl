@@ -1,3 +1,5 @@
+module Machine
+
 struct MemoryItem
     value::Integer
     isCharacter::Bool
@@ -237,4 +239,6 @@ function runProgram!(machine::Machine, program::Program)
         programCounter = machine.programCounter
         singleStep!(machine, program)
     end
+end
+
 end
