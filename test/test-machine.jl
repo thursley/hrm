@@ -1,5 +1,8 @@
 using Test
-using Hrm.Engine: programCounter,Machine, MemoryItem, runProgram!,execute!, singleStep!, init!,CommandSet,Inbox, Outbox,CopyFrom,CopyTo,Add,Sub,Jump,JumpNegative,JumpZero,error,isAddress,getAddress,isValue, Program,getNewProgramCounter
+using Hrm.Engine: programCounter, Machine, MemoryItem, runProgram!, execute!, 
+    singleStep!, init!, CommandSet, Inbox, Outbox, CopyFrom, CopyTo, Add, Sub, 
+    Jump, JumpNegative, JumpZero, error, isAddress, getAddress, isValue, 
+    Program, getNewProgramCounter
 
 ram = Vector{MemoryItem}(undef, 16)
 inbox = Vector{Union{Char, Integer}}(undef, 0)
@@ -146,7 +149,7 @@ programMaxOfTwo = ([
     CommandSet(CopyFrom, 1, false)
     CommandSet(Jump, 7, false)
 ],
-[1,2,4,3,100,150,999,0],
+[1, 2, 4, 3, 100, 150, 999, 0],
 [2, 4, 150, 999]
 )
 
