@@ -2,18 +2,34 @@ module Parser
 
 include("Engine.jl")
 
+commandMap = Dict(
+    "in" => Engine.Inbox,
+    "out" => Engine.Outbox,
+    "copy" => Engine.CopyFrom,
+    "paste" => Engine.CopyTo,
+    "add" => Engine.Add,
+    "sub" => Engine.Sub,
+    "inc" => Engine.Increment,
+    "dec" => Engine.Decrement,
+    "jmp" => Engine.Jump,
+    "jmpz" => Engine.JumpZero,
+    "jmpn" => Engine.JumpNegative
+)
+
 struct Label
     lineNumber::Integer
     name::String
 end
 
-function extractLabels!(input::Vector{String})::Vector{Label}
-    labels::Vector{Label} = []
+function extractLabels!(input::Vector{String})::Dict{String, Integer}
+    labels = Dict{String, Integer}()
     toRemove::Vector{Int} = []
+    labelCount::Integer = 0
     for i in 1:length(input)
         if occursin(r"^[a-zA-Z0-9_]+:$", input[i])
-            push!(labels, Label(i, input[i][1:end-1]))
+            labels[input[i][1:end-1]] = i - labelCount
             push!(toRemove, i)
+            labelCount += 1
         end
     end
     for i in reverse(toRemove)
@@ -22,12 +38,87 @@ function extractLabels!(input::Vector{String})::Vector{Label}
     return labels
 end
 
+function error(line::String, lineNumber::Integer, text::String)
+    throw(ErrorException(
+        "ERROR: failed to parse ($lineNumber) '$line': " * text))
+end
+
 function parse(input::Vector{String})::Engine.Program
     program::Engine.Program = []
     labels = extractLabels!(input)
-    lineNumber = 1
-    # for line in input
+    for i in 1:length(input)
+        params = split(input[i])
+        
+        if params[1] in ("in", "out")
+            command = Engine.CommandSet(commandMap[params[1]], 0, false)
+            push!(program, command)
+
+        elseif params[1] in ("copy", "paste", "add", "sub", "inc", "dec")
+            command = createAddressedCommand(params)
+            push!(program, command)
+
+        elseif params[1] in ("jmp", "jmpz", "jmpn")
+            command = createJumpCommand(params, labels)
+            push!(program, command)
+            
+        else 
+            error(line, i, "This is not a valid command.")
+        end
+    end
+
     return program
 end
 
+function getAddress(value::AbstractString)::Tuple{Bool, Integer}
+    if '*' === value[1]
+        return (true, Base.parse(Int64, value[2:end]))
+    end
+
+    return (false, Base.parse(Int64, value))
+end
+
+function createAddressedCommand(params::Vector{<:AbstractString})
+    if length(params) != 2
+        # error
+    end
+
+    command = commandMap[params[1]]
+    (isPointer, address) = getAddress(params[2])
+    return Engine.CommandSet(command, address, isPointer)
+end
+
+function createJumpCommand(
+        params::Vector{<:AbstractString}, 
+        labels::Dict{String, Integer}
+)::Engine.CommandSet
+
+    if length(params) != 2
+        #error
+    end
+
+    if !haskey(labels, params[2])
+        #error
+    end
+
+    return Engine.CommandSet(commandMap[params[1]], labels[params[2]], false)    
+end
+
 end # module
+
+program = Parser.parse([
+    "jmp begin",
+    "output:",
+    "copy 0",
+    "out",
+    "begin:",
+    "in",
+    "paste 0",
+    "in",
+    "sub 0",
+    "jmpz output",
+    "jmp begin"
+])
+
+for command in program
+    println(command)
+end
