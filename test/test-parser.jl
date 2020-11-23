@@ -18,14 +18,8 @@ include("../src/Parser.jl")
         ("1:", true),
         ("a:", true)
     ]
-    lines = map(testCases) do x
-        x[1]
-    end
-    matches = map(testCases) do x
-        x[2]
-    end
     
-    labels = Parser.extractLabels!(lines)
+    labels = Parser.extractLabels!([x[1] for x in testCases])
     for testCase in testCases
         @test testCase[2] == haskey(labels, testCase[1][1:end-1])
     end
