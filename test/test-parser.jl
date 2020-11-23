@@ -26,8 +26,7 @@ include("../src/Parser.jl")
     end
     
     labels = Parser.extractLabels!(lines)
-    labelNames = map(x -> x.name * ":", labels)
     for testCase in testCases
-        @test testCase[2] == (testCase[1] in labelNames)
+        @test testCase[2] == haskey(labels, testCase[1][1:end-1])
     end
 end
