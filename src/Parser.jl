@@ -5,15 +5,15 @@ include("Engine.jl")
 commandMap = Dict(
     "in" => Engine.Inbox,
     "out" => Engine.Outbox,
-    "copy" => Engine.CopyFrom,
-    "paste" => Engine.CopyTo,
+    "copyfrom" => Engine.CopyFrom,
+    "copyto" => Engine.CopyTo,
     "add" => Engine.Add,
     "sub" => Engine.Sub,
     "inc" => Engine.Increment,
     "dec" => Engine.Decrement,
-    "jmp" => Engine.Jump,
-    "jmpz" => Engine.JumpZero,
-    "jmpn" => Engine.JumpNegative
+    "jump" => Engine.Jump,
+    "jumpz" => Engine.JumpZero,
+    "jumpn" => Engine.JumpNegative
 )
 
 struct Label
@@ -107,17 +107,17 @@ end
 end # module
 
 # program = Parser.parse([
-#     "jmp begin",
+#     "jump begin",
 #     "output:",
-#     "copy 0",
+#     "copyfrom 0",
 #     "out",
 #     "begin:",
 #     "in",
-#     "paste 0",
+#     "copyto 0",
 #     "in",
 #     "sub 0",
-#     "jmpz output",
-#     "jmp begin"
+#     "jumpz output",
+#     "jump begin"
 # ])
 
 # for command in program
