@@ -38,9 +38,9 @@ function extractLabels!(input::Vector{String})::Dict{String, Integer}
     return labels
 end
 
-function error(line::String, lineNumber::Integer, text::String)
+function error(line::String, text::String)
     throw(ErrorException(
-        "ERROR: failed to parse ($lineNumber) '$line': " * text))
+        "ERROR: failed to parse '$line': " * text))
 end
 
 function parse(input::Vector{String})::Engine.Program
@@ -62,7 +62,7 @@ function parse(input::Vector{String})::Engine.Program
             push!(program, command)
             
         else 
-            error(line, i, "This is not a valid command.")
+            error(line, "This is not a valid command.")
         end
     end
 
@@ -93,11 +93,12 @@ function createJumpCommand(
 )::Engine.CommandSet
 
     if length(params) != 2
-        #error
+        error(params..., "Length of command has to be 2, " *
+                         "but is $(length(params)).")
     end
 
     if !haskey(labels, params[2])
-        #error
+        error(params..., "Label '$(params[2]) not in defined.")
     end
 
     return Engine.CommandSet(commandMap[params[1]], labels[params[2]], false)    
@@ -105,20 +106,20 @@ end
 
 end # module
 
-program = Parser.parse([
-    "jmp begin",
-    "output:",
-    "copy 0",
-    "out",
-    "begin:",
-    "in",
-    "paste 0",
-    "in",
-    "sub 0",
-    "jmpz output",
-    "jmp begin"
-])
+# program = Parser.parse([
+#     "jmp begin",
+#     "output:",
+#     "copy 0",
+#     "out",
+#     "begin:",
+#     "in",
+#     "paste 0",
+#     "in",
+#     "sub 0",
+#     "jmpz output",
+#     "jmp begin"
+# ])
 
-for command in program
-    println(command)
-end
+# for command in program
+#     println(command)
+# end
