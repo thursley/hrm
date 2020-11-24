@@ -21,12 +21,16 @@ struct Label
     name::String
 end
 
+function isLable(input::String)::Bool
+    return occursin(r"^[a-zA-Z0-9_]+:$", input)
+end
+
 function extractLabels!(input::Vector{String})::Dict{String, Integer}
     labels = Dict{String, Integer}()
     toRemove::Vector{Int} = []
     labelCount::Integer = 0
     for i in 1:length(input)
-        if occursin(r"^[a-zA-Z0-9_]+:$", input[i])
+        if isLabel(input[i])
             labels[input[i][1:end-1]] = i - labelCount
             push!(toRemove, i)
             labelCount += 1
