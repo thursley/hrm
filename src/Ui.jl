@@ -4,10 +4,31 @@ struct Point
     y::Integer
 end
 
+function Base.:(+)(x::Point, y::Point)::Point
+    return Point(x.x + y.x, x.y + y.y)
+end
+
 function update()
     # TODO clear screen
     for row in eachrow(board)
         print(row...)
+    end
+end
+
+function rectangle!(field::Matrix{Char}, position::Point, 
+                    width::Integer, height::Integer)
+    
+    field[point.y, point.x] = '\u250c'
+    field[point.y, point.x + width - 1] = '\u2510'
+    field[point.y + height - 1, point.x] = '\u2514'
+    field[point.y + height - 1, point.x + width - 1] = '\u2518'
+    for x in point.x + 1:point.x + width - 2
+        field[point.y, x] = '\u2500'
+        field[point.y + height - 1, x] = '\u2500'
+    end
+    for y in point.y + 1:point.y + height - 2
+        field[y, point.x] = '\u2502'
+        field[y, point.x + width - 1] = '\u2502'
     end
 end
 
@@ -50,7 +71,6 @@ end
 
 rectangle(Point(1,1), boardWidth - 1, boardHeight)
 
-
 program = (
     "jump begin",
     "output:",
@@ -65,16 +85,52 @@ program = (
     "jump begin"
 )
 
+struct StrippedProgram
+    program::Vector{String}
+    labels::Dict{Integer, String}
+end
 
-programWidth = maximum(map(line -> length(line), program))
-programHeight = length(program)
+function strip(program::Vector{String})::StrippedProgram
+    count = 1
+    labels::Dict{Integer, String} = Dict()
+    stripped::Vector{String} = []
+    for line in program
+        if Parser.isLabel(line)
+            labels[count] = line
+        else
+            count += 1
+            push!(stripped, line)
+        end
+    end
 
-rectangle(Point(4,4), programWidth + 2, programHeight + 2)
-for i in 1:length(program)
-    for j in 1:length(program[i])
-        board[i+4, j+4] = program[i][j]
+    return StrippedProgram(program, labels)
+end
+
+function draw(position::Point, field::Matrix{Char})
+    height, width = size(field)
+    for i in 1:height
+        for j in 1:width
+            board[i + position.y, j + position.x] = field[i,j]
+        end
+    end
+end 
+
+function draw(position::Point, program::StrippedProgram)
+    labelWidth = maximum(map(l -> length(l)), keys(program.labels))
+    programWidth = maximum(map(line -> length(line), program))
+    programHeight = length(program)
+
+    rectangle!(point + Point(labelWidth, 0), programWidth + 2, programHeight + 2)
+    for i in 1:length(program)
+        for j in 1:length(program[i])
+            board[i+4, j+4] = program[i][j]
+        end
     end
 end
+
+
+
+rectangle(Point(4,4), programWidth + 2, programHeight + 2)
 update()
 
 
