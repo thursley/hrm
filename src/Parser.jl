@@ -57,11 +57,11 @@ function parse(input::Vector{String})::Engine.Program
             command = Engine.CommandSet(commandMap[params[1]], 0, false)
             push!(program, command)
 
-        elseif params[1] in ("copy", "paste", "add", "sub", "inc", "dec")
+        elseif params[1] in ("copyfrom", "copyto", "add", "sub", "inc", "dec")
             command = createAddressedCommand(params)
             push!(program, command)
 
-        elseif params[1] in ("jmp", "jmpz", "jmpn")
+        elseif params[1] in ("jump", "jumpz", "jumpn")
             command = createJumpCommand(params, labels)
             push!(program, command)
             
