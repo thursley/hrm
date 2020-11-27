@@ -1,3 +1,45 @@
+import Base.show
+
+include("Engine.jl")
+include("Parser.jl")
+
+function isAddressedCommand(command::Engine.Command)::Bool
+    return command in (
+        Engine.Add, Engine.Sub, 
+        Engine.Increment, Engine.Decrement,
+        Engine.CopyFrom, Engine.CopyTo)
+end
+
+function isJumpCommand(command::Engine.Command)::Bool
+    return command in (Engine.Jump, Engine.JumpNegative, Engine.JumpZero)
+end
+
+function show(io::IO, command::Engine.CommandSet)
+    name = findfirst(isequal(command.command), Parser.commandMap)
+    print(io, "$(name)")
+    if isAddressedCommand(command.command)
+        if command.isPointer
+            print(io, " [$(command.address)]")
+        else 
+            print(io, " $(command.address)")
+        end
+    elseif isJumpCommand(command.command)
+        # TODO can we get label name here?
+        print(io, " $(command.address)")
+    end
+end
+
+function show(io::IO, program::Engine.Program)
+    for line in program
+        println(io, line)
+    end
+end
+
+function show(io::IO, machine::Engine.Machine)
+end
+    
+
+	
 
 struct Point
     x::Integer
@@ -130,8 +172,8 @@ end
 
 
 
-rectangle(Point(4,4), programWidth + 2, programHeight + 2)
-update()
+    # rectangle(Point(4,4), programWidth + 2, programHeight + 2)
+    # update()
 
 
 
