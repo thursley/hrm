@@ -21,7 +21,7 @@ struct Label
     name::String
 end
 
-function isLable(input::String)::Bool
+function isLabel(input::String)::Bool
     return occursin(r"^[a-zA-Z0-9_]+:$", input)
 end
 
