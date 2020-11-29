@@ -257,6 +257,11 @@ function processNextInput!(machine::Machine, program::Program)
     while true
         singleStep!(machine, program)
         if Input == program[machine.programCounter].operation
+            break
+        end
+    end
+end
+
 
 function isFinished(machine::Machine, program::Program)::Bool
     return machine.programCounter > length(program) ||
