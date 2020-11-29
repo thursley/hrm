@@ -2,6 +2,8 @@ import Base.show
 
 include("Engine.jl")
 include("Parser.jl")
+# using .Engine
+# using .Parser
 
 function isAddressedCommand(command::Engine.Command)::Bool
     return command in (

@@ -1,6 +1,7 @@
-module Parser
-
 include("Engine.jl")
+
+module Parser
+using .Engine
 
 commandMap = Dict(
     "in" => Engine.Inbox,
