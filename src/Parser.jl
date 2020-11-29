@@ -54,7 +54,7 @@ function parse(input::Vector{String})::Engine.Program
         params = split(input[i])
         
         if params[1] in ("in", "out")
-            command = Engine.CommandSet(commandMap[params[1]], 0, false)
+            command = Engine.Command(commandMap[params[1]], 0, false)
             push!(program, command)
 
         elseif params[1] in ("copy", "paste", "add", "sub", "inc", "dec")
@@ -88,13 +88,13 @@ function createAddressedCommand(params::Vector{<:AbstractString})
 
     command = commandMap[params[1]]
     (isPointer, address) = getAddress(params[2])
-    return Engine.CommandSet(command, address, isPointer)
+    return Engine.Command(command, address, isPointer)
 end
 
 function createJumpCommand(
         params::Vector{<:AbstractString}, 
         labels::Dict{String, Integer}
-)::Engine.CommandSet
+)::Engine.Command
 
     if length(params) != 2
         error(params..., "Length of command has to be 2, " *
@@ -105,7 +105,7 @@ function createJumpCommand(
         error(params..., "Label '$(params[2]) not in defined.")
     end
 
-    return Engine.CommandSet(commandMap[params[1]], labels[params[2]], false)    
+    return Engine.Command(commandMap[params[1]], labels[params[2]], false)    
 end
 
 end # module

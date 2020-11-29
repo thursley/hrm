@@ -85,13 +85,13 @@ end
     JumpNegative
 end
 
-struct CommandSet
+struct Command
     operation::Operation
     address::Integer
     isPointer::Bool
 end
 
-Program = Vector{CommandSet}
+Program = Vector{Command}
 
 mutable struct Machine
     ram::Vector{MemoryItem}
@@ -101,7 +101,7 @@ mutable struct Machine
     programCounter::Integer
 end
 
-function error(command::CommandSet, message::String)
+function error(command::Command, message::String)
     throw(ErrorException(
         "ERROR: ($programCounter) $(command.operation) failed. " * message))
 end
@@ -122,7 +122,7 @@ function isValue(value)
     return ' ' !== value
 end
 
-function getAddress(command::CommandSet, memory::Vector{MemoryItem})::Integer
+function getAddress(command::Command, memory::Vector{MemoryItem})::Integer
     if !isAddress(command.address, memory)
         error(command, "$(command.address) is no address")
     end
@@ -140,7 +140,7 @@ function getAddress(command::CommandSet, memory::Vector{MemoryItem})::Integer
     return address
 end
 
-function getNewProgramCounter(command::CommandSet)::Integer
+function getNewProgramCounter(command::Command)::Integer
     if command.address < 1
         error(command, "$(command.address) is no program counter address")
     end
@@ -156,7 +156,7 @@ function getMemoryValue(address, memory::Vector{MemoryItem})::MemoryItem
     end
 end
 
-function execute!(command::CommandSet, machine::Machine)
+function execute!(command::Command, machine::Machine)
     if Inbox === command.operation
         machine.register = MemoryItem(pop!(machine.inbox))
 
@@ -254,9 +254,13 @@ function singleStep!(machine::Machine, program::Program)
 end
 
 function processNextInput!(machine::Machine, program::Program)
+    if isempty(machine.inbox)
+        return
+    end
+
     while true
         singleStep!(machine, program)
-        if Input == program[machine.programCounter].operation
+        if Inbox == program[machine.programCounter].operation
             break
         end
     end

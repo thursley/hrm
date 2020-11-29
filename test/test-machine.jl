@@ -1,6 +1,6 @@
 using Test
 using Hrm.Engine: programCounter, Machine, MemoryItem, runProgram!, execute!, 
-    singleStep!, init!, CommandSet, Inbox, Outbox, CopyFrom, CopyTo, Add, Sub, 
+    singleStep!, init!, Command, Inbox, Outbox, CopyFrom, CopyTo, Add, Sub, 
     Increment, Decrement, Jump, JumpNegative, JumpZero, error, isAddress, 
     getAddress, isValue, Program, getNewProgramCounter, Operation
 
@@ -29,7 +29,7 @@ end
 
 struct TestCase
     machine::Machine
-    command::CommandSet
+    command::Command
     expectedOutcome::Machine
 end
 
@@ -38,7 +38,7 @@ function testCommand(testCase::TestCase)::Bool
     return testCase.expectedOutcome == testCase.machine
 end
 
-function testCommand(testee::Machine, command::CommandSet, expected::Machine)
+function testCommand(testee::Machine, command::Command, expected::Machine)
     return testCommand(TestCase(testee, command, expected))
 end 
 
@@ -57,7 +57,7 @@ init!(machine)
 end
 
 @testset "test_error" begin
-    cmd = CommandSet(CopyFrom, 0, true)
+    cmd = Command(CopyFrom, 0, true)
     testMessage = "this is a test message"
     message = ""
     try
@@ -89,8 +89,8 @@ end
     machine.ram[index] = MemoryItem(pointer)
     machine.ram[pointer] = MemoryItem(3)
 
-    directCommand = CommandSet(CopyFrom, index, false)
-    pointedCommand = CommandSet(CopyFrom, index, true)
+    directCommand = Command(CopyFrom, index, false)
+    pointedCommand = Command(CopyFrom, index, true)
 
     @test 1 === getAddress(directCommand, machine.ram)
     @test 2 === getAddress(pointedCommand, machine.ram)
@@ -98,12 +98,12 @@ end
 
 @testset "test_getNewProgramCounter" begin
     for i in 1:100
-        command = CommandSet(Jump, i, false)
+        command = Command(Jump, i, false)
         @test i === getNewProgramCounter(command)
     end 
     thrown = false
     try
-        getNewProgramCounter(CommandSet(Jump, 0, false))
+        getNewProgramCounter(Command(Jump, 0, false))
     catch
         thrown = true
     end
@@ -112,7 +112,7 @@ end
 end
 
 @testset "test_execute_outbox" begin
-    command = CommandSet(Outbox, 0, false)
+    command = Command(Outbox, 0, false)
     machine.register = MemoryItem(' ')
     thrown = false
     try
@@ -132,7 +132,7 @@ end
 end
 
 @testset "test_execute_inbox" begin
-    command = CommandSet(Inbox, 0, false)
+    command = Command(Inbox, 0, false)
     push!(machine.inbox, 'a')
     expected = copy(machine)
     push!(machine.inbox, 'b')
@@ -146,8 +146,8 @@ end
     index = 5
     pointer = 3
     secret = 47
-    direct = CommandSet(CopyFrom, index, false)
-    pointed = CommandSet(CopyFrom, index, true)
+    direct = Command(CopyFrom, index, false)
+    pointed = Command(CopyFrom, index, true)
     machine.ram[index] = MemoryItem(pointer)
     machine.ram[pointer] = MemoryItem(secret)
 
@@ -168,8 +168,8 @@ end
     machine.ram[pointer] = MemoryItem(point)
     machine.ram[point] = MemoryItem(0)
 
-    direct = CommandSet(CopyTo, index, false)
-    pointed = CommandSet(CopyTo, pointer, true)
+    direct = Command(CopyTo, index, false)
+    pointed = Command(CopyTo, pointer, true)
     
     machine.register = MemoryItem('a')
     expected = copy(machine)
@@ -189,7 +189,7 @@ end
     machine.ram[index] = MemoryItem(value)
     machine.register = MemoryItem(offset)
 
-    command = CommandSet(Add, index, false)
+    command = Command(Add, index, false)
     expected = copy(machine)
     expected.register = MemoryItem(offset + value)
     @test testCommand(machine, command, expected)
@@ -202,7 +202,7 @@ end
     machine.ram[index] = MemoryItem(value)
     machine.register = MemoryItem(offset)
 
-    command = CommandSet(Sub, index, false)
+    command = Command(Sub, index, false)
     expected = copy(machine)
     expected.register = MemoryItem(offset - value)
     @test testCommand(machine, command, expected)
@@ -213,7 +213,7 @@ end
     index = 12
     machine.ram[index] = MemoryItem(value)
     machine.register = MemoryItem('x')
-    command = CommandSet(Increment, index, false)
+    command = Command(Increment, index, false)
     expected = copy(machine)
     expected.register = MemoryItem(value + 1)
     expected.ram[index] = expected.register
@@ -225,7 +225,7 @@ end
     index = 12
     machine.ram[index] = MemoryItem(value)
     machine.register = MemoryItem('x')
-    command = CommandSet(Decrement, index, false)
+    command = Command(Decrement, index, false)
     expected = copy(machine)
     expected.register = MemoryItem(value - 1)
     expected.ram[index] = expected.register
@@ -242,12 +242,12 @@ function testJump(oldPc, command, jumpExpected)::Bool
 end
 
 @testset "test_execute_jump" begin
-    command = CommandSet(Jump, 18, false)
+    command = Command(Jump, 18, false)
     @test testJump(7, command, true)
 end
 
 @testset "test_execute_jumpZero" begin
-    command = CommandSet(JumpZero, 58, false)
+    command = Command(JumpZero, 58, false)
 
     machine.register = MemoryItem(0)
     @test testJump(5, command, true)
@@ -260,7 +260,7 @@ end
 end
 
 @testset "test_execute_jumpNegative" begin
-     command = CommandSet(JumpNegative, 58, false)
+     command = Command(JumpNegative, 58, false)
     
     machine.register = MemoryItem(0)
     @test testJump(5, command, false)
@@ -273,16 +273,16 @@ end
 end
 
 programMaxOfTwo = ([
-    CommandSet(Inbox, 0, false)
-    CommandSet(CopyTo, 1, false)
-    CommandSet(Inbox, 0, false)
-    CommandSet(Sub, 1, false)
-    CommandSet(JumpNegative, 9, false)
-    CommandSet(Add, 1, false)
-    CommandSet(Outbox, 0, false)
-    CommandSet(Jump, 1, false)
-    CommandSet(CopyFrom, 1, false)
-    CommandSet(Jump, 7, false)
+    Command(Inbox, 0, false)
+    Command(CopyTo, 1, false)
+    Command(Inbox, 0, false)
+    Command(Sub, 1, false)
+    Command(JumpNegative, 9, false)
+    Command(Add, 1, false)
+    Command(Outbox, 0, false)
+    Command(Jump, 1, false)
+    Command(CopyFrom, 1, false)
+    Command(Jump, 7, false)
 ],
 [1, 2, 4, 3, 100, 150, 999, 0],
 [2, 4, 150, 999]
@@ -297,9 +297,9 @@ programMaxOfTwo = ([
     push!(machine.inbox, 'a')
 
     program = [
-        CommandSet(Inbox, 0, false)
-        CommandSet(Outbox, 0, false)
-        CommandSet(Jump, 1, false)
+        Command(Inbox, 0, false)
+        Command(Outbox, 0, false)
+        Command(Jump, 1, false)
     ]
 
     runProgram!(machine, program)
