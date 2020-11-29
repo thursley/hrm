@@ -71,7 +71,7 @@ Base.:(-)(x::MemoryItem) = begin
     return MemoryItem(-x.value, x.isCharacter)
 end
 
-@enum Command begin
+@enum Operation begin
     Inbox
     Outbox
     CopyFrom
@@ -86,7 +86,7 @@ end
 end
 
 struct CommandSet
-    command::Command
+    operation::Operation
     address::Integer
     isPointer::Bool
 end
@@ -103,7 +103,7 @@ end
 
 function error(command::CommandSet, message::String)
     throw(ErrorException(
-        "ERROR: ($programCounter) $(command.command) failed. " * message))
+        "ERROR: ($programCounter) $(command.operation) failed. " * message))
 end
 
 function error(message::String)
@@ -157,17 +157,17 @@ function getMemoryValue(address, memory::Vector{MemoryItem})::MemoryItem
 end
 
 function execute!(command::CommandSet, machine::Machine)
-    if Inbox === command.command
+    if Inbox === command.operation
         machine.register = MemoryItem(pop!(machine.inbox))
 
-    elseif Outbox === command.command
+    elseif Outbox === command.operation
         if ' ' == machine.register
             error(command, "no value.")
         end
         push!(machine.outbox, unwrap(machine.register))
         machine.register = MemoryItem(' ')
 
-    elseif CopyFrom === command.command
+    elseif CopyFrom === command.operation
         address = getAddress(command, machine.ram)
 
         if ' ' == machine.ram[address]
@@ -175,7 +175,7 @@ function execute!(command::CommandSet, machine::Machine)
         end
         machine.register = machine.ram[address]
 
-    elseif CopyTo == command.command
+    elseif CopyTo == command.operation
         if ' ' == machine.register
             error(command, "no value.")
         end
@@ -183,7 +183,7 @@ function execute!(command::CommandSet, machine::Machine)
         address = getAddress(command, machine.ram)
         machine.ram[address] = machine.register
 
-    elseif command.command in (Add, Sub)
+    elseif command.operation in (Add, Sub)
         address = getAddress(command, machine.ram)
         value = getMemoryValue(address, machine.ram)
         if nothing === value
@@ -192,24 +192,24 @@ function execute!(command::CommandSet, machine::Machine)
             error(command, "no value")
         end
 
-        machine.register = Add === command.command ? 
+        machine.register = Add === command.operation ? 
             machine.register + value : machine.register - value
 
-    elseif command.command in (Increment, Decrement)
+    elseif command.operation in (Increment, Decrement)
         address = getAddress(command, machine.ram)
         value = getMemoryValue(address, machine.ram)
         if nothing === value
             error(command, "no value at [$address]")
         end
-        machine.ram[address] += Increment === command.command ? 1 : -1
+        machine.ram[address] += Increment === command.operation ? 1 : -1
         machine.register = machine.ram[address]
 
-    elseif Jump === command.command
+    elseif Jump === command.operation
         address = getNewProgramCounter(command)
         # address will be incremented later.
         machine.programCounter = address - 1
         
-    elseif JumpZero === command.command   
+    elseif JumpZero === command.operation   
         address = getNewProgramCounter(command)
         if ' ' == machine.register
             error(command, "no value")
@@ -218,7 +218,7 @@ function execute!(command::CommandSet, machine::Machine)
             machine.programCounter = address - 1
         end
         
-    elseif JumpNegative === command.command   
+    elseif JumpNegative === command.operation   
         address = getNewProgramCounter(command)
         if ' ' == machine.register
             error(command, "no value")
@@ -228,7 +228,7 @@ function execute!(command::CommandSet, machine::Machine)
         end 
 
     else
-        error(command, "$(command.command) is not supported.")
+        error(command, "$(command.operation) is not supported.")
     end
 end
             
@@ -253,9 +253,14 @@ function singleStep!(machine::Machine, program::Program)
     machine.programCounter += 1
 end
 
+function processNextInput!(machine::Machine, program::Program)
+    while true
+        singleStep!(machine, program)
+        if Input == program[machine.programCounter].operation
+
 function isFinished(machine::Machine, program::Program)::Bool
     return machine.programCounter > length(program) ||
-        (Inbox === program[machine.programCounter].command &&
+        (Inbox === program[machine.programCounter].operation &&
              0 === length(machine.inbox))
 end
 
@@ -265,5 +270,7 @@ function runProgram!(machine::Machine, program::Program)
         singleStep!(machine, program)
     end
 end
+
+
 
 end

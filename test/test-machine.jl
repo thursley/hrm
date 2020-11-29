@@ -2,7 +2,7 @@ using Test
 using Hrm.Engine: programCounter, Machine, MemoryItem, runProgram!, execute!, 
     singleStep!, init!, CommandSet, Inbox, Outbox, CopyFrom, CopyTo, Add, Sub, 
     Increment, Decrement, Jump, JumpNegative, JumpZero, error, isAddress, 
-    getAddress, isValue, Program, getNewProgramCounter, Command
+    getAddress, isValue, Program, getNewProgramCounter, Operation
 
 import Base.copy
 
@@ -65,7 +65,7 @@ end
     catch exception
         message = exception.msg
     end
-    @test ("ERROR: ($programCounter) $(cmd.command) failed. " * testMessage 
+    @test ("ERROR: ($programCounter) $(cmd.operation) failed. " * testMessage 
             == message)
 end
 
