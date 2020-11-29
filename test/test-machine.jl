@@ -273,19 +273,19 @@ end
 end
 
 programMaxOfTwo = ([
-    Command(Inbox, 0, false)
-    Command(CopyTo, 1, false)
-    Command(Inbox, 0, false)
-    Command(Sub, 1, false)
-    Command(JumpNegative, 9, false)
-    Command(Add, 1, false)
-    Command(Outbox, 0, false)
-    Command(Jump, 1, false)
-    Command(CopyFrom, 1, false)
-    Command(Jump, 7, false)
-],
-[1, 2, 4, 3, 100, 150, 999, 0],
-[2, 4, 150, 999]
+        Command(Inbox, 0, false)
+        Command(CopyTo, 1, false)
+        Command(Inbox, 0, false)
+        Command(Sub, 1, false)
+        Command(JumpNegative, 9, false)
+        Command(Add, 1, false)
+        Command(Outbox, 0, false)
+        Command(Jump, 1, false)
+        Command(CopyFrom, 1, false)
+        Command(Jump, 7, false)
+    ],
+    [1, 2, 4, 3, 100, 150, 999, 0],
+    [2, 4, 150, 999]
 )
 
 @testset "test_runProgram" begin
