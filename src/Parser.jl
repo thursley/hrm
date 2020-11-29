@@ -109,21 +109,3 @@ function createJumpCommand(
 end
 
 end # module
-
-# program = Parser.parse([
-#     "jump begin",
-#     "output:",
-#     "copyfrom 0",
-#     "out",
-#     "begin:",
-#     "in",
-#     "copyto 0",
-#     "in",
-#     "sub 0",
-#     "jumpz output",
-#     "jump begin"
-# ])
-
-# for command in program
-#     println(command)
-# end

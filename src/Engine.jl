@@ -232,7 +232,6 @@ function execute!(command::Command, machine::Machine)
     end
 end
             
-program = Program(undef, 60)
 programCounter = 0
 
 function init!(machine::Machine)
@@ -280,6 +279,4 @@ function runProgram!(machine::Machine, program::Program)
     end
 end
 
-
-
-end
+end # module
